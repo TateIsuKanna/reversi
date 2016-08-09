@@ -2,6 +2,13 @@
 #include<iostream>
 using namespace std;
 
+enum stonecolor{
+	green,
+	black,
+	white,
+};
+stonecolor board[10][10];
+stonecolor current_turn;
 class Point{
 public:
 	Point(int, int);
@@ -44,7 +51,7 @@ Point::Point(int xv, int yv){
 Point::Point(){}
 Point::~Point(){}
 
-bool reverse_alldirec(Point, bool);
+bool reverse_alldirec(Point, bool, stonecolor);
 
 class reversi_AI{
 public:
@@ -63,12 +70,11 @@ public:
 			}
 		}
 
-
 		Point max_pos;
 		int max = -1000;//HACK:
 		for(int y = 1; y <= 8; ++y){
 			for(int x = 1; x <= 8; ++x){
-				if(reverse_alldirec(Point(x, y), true)){
+				if(reverse_alldirec(Point(x, y), true, current_turn)){
 					if(rating[y][x] > max){
 						max = rating[y][x];
 						max_pos = Point(x, y);
@@ -85,13 +91,6 @@ private:
 reversi_AI::reversi_AI(){}
 reversi_AI::~reversi_AI(){}
 
-enum stonecolor{
-	green,
-	black,
-	white,
-};
-stonecolor board[10][10];
-stonecolor current_turn;
 void init(){
 	current_turn = black;
 	for(int y = 0; y < 10; ++y){
@@ -179,39 +178,37 @@ void change_player(){
 }
 
 //TODO:search_sand_pairとreverseまとめれそうじゃない?
-
-Point search_sand_pair(Point start_pos, Point direc){
-	Point search_pos = start_pos + direc;
-	if(board[search_pos.y][search_pos.x] == current_turn || board[search_pos.y][search_pos.x] == green){
-		return start_pos;
-		//とれなかった事を検索開始位置を返すことで示す
-	}
-
+Point search_sand_pair(Point start_pos, Point direc, stonecolor turn){
+	//Point search_pos = start_pos + direc;
+	//if(board[search_pos.y][search_pos.x] == turn || board[search_pos.y][search_pos.x] == green){
+	//	return start_pos;
+	//	//とれなかった事を検索開始位置を返すことで示す
+	//}
+	Point search_pos = start_pos;
 	do{
 		search_pos += direc;
 		if(board[search_pos.y][search_pos.x] == green){
 			return start_pos;
 			//相手がいなかった事を検索開始位置を返すことで示す
 		}
-	} while(board[search_pos.y][search_pos.x] == get_enemy_color(current_turn));
+	} while(board[search_pos.y][search_pos.x] == get_enemy_color(turn));
 	return search_pos - direc;//ゴールの一歩手前までが裏返す所!
 }
-bool reverse(Point start_pos, Point direc, bool just_check){
+bool reverse(Point start_pos, Point direc, bool just_check, stonecolor turn){
 	Point reverse_pos = start_pos;
-	Point goal = search_sand_pair(start_pos, direc);
+	Point goal = search_sand_pair(start_pos, direc, turn);
 	if(goal == start_pos){
 		return false;
 	}
 	do{
 		reverse_pos += direc;
 		if(!just_check){
-			board[reverse_pos.y][reverse_pos.x] = current_turn;
+			board[reverse_pos.y][reverse_pos.x] = turn;
 		}
 	} while(!(reverse_pos == goal));
 	return true;
 }
-
-bool reverse_alldirec(Point fing, bool just_check){
+bool reverse_alldirec(Point fing, bool just_check, stonecolor turn){
 	//入力範囲チェック
 	if(!((1 <= fing.x && fing.x <= 8) && (1 <= fing.y && fing.y <= 8))){
 		return false;
@@ -224,7 +221,7 @@ bool reverse_alldirec(Point fing, bool just_check){
 	for(int y = -1; y <= 1; ++y){
 		for(int x = -1; x <= 1; ++x){
 			if(!(y == 0 && x == 0)){
-				if(reverse(fing, Point(x, y), just_check)){
+				if(reverse(fing, Point(x, y), just_check, turn)){
 					ok = true;
 				}
 			}
@@ -236,7 +233,7 @@ bool reverse_alldirec(Point fing, bool just_check){
 bool is_need_pass(stonecolor player){
 	for(int y = 1; y <= 8; ++y){
 		for(int x = 1; x <= 8; ++x){
-			if(reverse_alldirec(Point(x, y), true)){
+			if(reverse_alldirec(Point(x, y), true, player)){
 				return false;
 			}
 		}
@@ -244,7 +241,7 @@ bool is_need_pass(stonecolor player){
 	return true;
 }
 bool is_end(){
-	if(is_need_pass(white) && is_need_pass(black)){//UNDONE:turnで今の状態が決まっちゃってるからblackだの指定しても無駄．
+	if(is_need_pass(white) && is_need_pass(black)){
 		return true;
 	}
 	return false;
@@ -272,13 +269,12 @@ int main(){
 				//HACK:ちょっぴりHACK
 				int temp;
 				cin >> temp;
-				fing_pos.x = temp / 10;
-				fing_pos.y = temp % 10;
+				fing_pos = Point(temp / 10, temp % 10);
 			} else{
 				fing_pos = reversi_AI::think();
 				cout << fing_pos.x << " " << fing_pos.y << "に置いたよ" << endl << endl;
 			}
-			if(reverse_alldirec(fing_pos, false)){
+			if(reverse_alldirec(fing_pos, false, current_turn)){
 				board[fing_pos.y][fing_pos.x] = current_turn;
 				change_player();
 			} else{
@@ -289,6 +285,7 @@ int main(){
 		cout << "終了" << endl;
 		cout << endl;
 		show_winner();
+		cout << "-----" << endl;
 	}
 	return 0;
 }
