@@ -52,16 +52,21 @@ Point::Point(){}
 Point::~Point(){}
 
 bool reverse_alldirec(Point, bool, stonecolor);
+Point search_sand_pair(Point, Point, stonecolor);
 
+int rating[10][10] = {{},{0,30,-12,0,-1},
+{0,-12,-15,-3,-3},
+{0,0,-3,0,-1},
+{0,-1,-3,-1,-1}};
 class reversi_AI{
 public:
 	reversi_AI();
 	~reversi_AI();
 	Point static think(){
-		int rating[10][10] = {{},{0,30,-12,0,-1},
-		{0,-12,-15,-3,-3},
-		{0,0,-3,0,-1},
-		{0,-1,-3,-1,-1}};
+		//int rating[10][10] = {{},{0,30,-12,0,-1},
+		//{0,-12,-15,-3,-3},
+		//{0,0,-3,0,-1},
+		//{0,-1,-3,-1,-1}};
 		for(int y = 1; y <= 8; ++y){
 			for(int x = 1; x <= 8; ++x){
 				rating[y][9 - x] = rating[y][x];
@@ -71,12 +76,13 @@ public:
 		}
 
 		Point max_pos;
-		int max = -1000;//HACK:
+		int max = -999999999;//HACK:
 		for(int y = 1; y <= 8; ++y){
 			for(int x = 1; x <= 8; ++x){
-				if(reverse_alldirec(Point(x, y), true, current_turn)){
-					if(rating[y][x] > max){
-						max = rating[y][x];
+				int rate = rate_alldirec(Point(x, y), current_turn);
+				if(rate > -9999){
+					if(rate > max){
+						max = rate;
 						max_pos = Point(x, y);
 					}
 				}
@@ -87,6 +93,53 @@ public:
 	}
 
 private:
+	int static rate_reverse(Point start_pos, Point direc, stonecolor turn){
+		Point reverse_pos = start_pos;
+		Point goal = search_sand_pair(start_pos, direc, turn);
+		if(goal == start_pos){
+			//HACK:絶対やめろ!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			return -9999;
+		}
+		int rate_sum = 0;
+		do{
+			rate_sum += rating[reverse_pos.y][reverse_pos.x];
+			reverse_pos += direc;
+		} while(!(reverse_pos == goal));
+		rate_sum -= rating[reverse_pos.y][reverse_pos.x];//ゴールの分のスコア減
+		return rate_sum;
+	}
+	int static rate_alldirec(Point fing, stonecolor turn){
+		//入力範囲チェック
+		if(!((1 <= fing.x && fing.x <= 8) && (1 <= fing.y && fing.y <= 8))){
+			//HACK:絶対やめろ!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			return -9999;
+		}
+		//入力チェック既においてあるか．もうちょっと良い方法あるかも．
+		if(!(board[fing.y][fing.x] == green)){
+			//HACK:絶対やめろ!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			return -9999;
+		}
+		int rate_sum = 0;
+		bool ok = false;
+		for(int y = -1; y <= 1; ++y){
+			for(int x = -1; x <= 1; ++x){
+				if(!(y == 0 && x == 0)){
+					//rate_sum += rate_reverse(fing, Point(x, y), turn);
+					int tmp = rate_reverse(fing, Point(x, y), turn);
+					if(tmp > -9999){
+						rate_sum += tmp;
+						ok = true;
+					}
+				}
+			}
+		}
+		if(!ok){
+			//HACK:絶対やめろ!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			return -9999;
+		}
+		return rate_sum;
+	}
+
 };
 reversi_AI::reversi_AI(){}
 reversi_AI::~reversi_AI(){}
@@ -261,12 +314,12 @@ int main(){
 			}
 			if(is_need_pass(current_turn)){
 				cout << "パス" << endl;
+				//UNDONE:連続パスの時
 				change_player();
 			}
 			show_turn();
 			Point fing_pos;
 			if(current_turn == first_player){
-				//HACK:ちょっぴりHACK
 				int temp;
 				cin >> temp;
 				fing_pos = Point(temp / 10, temp % 10);
