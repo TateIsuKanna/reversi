@@ -51,7 +51,7 @@ Point::Point(int xv, int yv){
 Point::Point(){}
 Point::~Point(){}
 
-int reverse_alldirec(Point, bool, stonecolor);
+bool reverse_alldirec(Point, bool, stonecolor);
 
 class reversi_AI{
 public:
@@ -74,7 +74,7 @@ public:
 		int max = -1000;//HACK:
 		for(int y = 1; y <= 8; ++y){
 			for(int x = 1; x <= 8; ++x){
-				if(reverse_alldirec(Point(x, y), true, current_turn) > 0){
+				if(reverse_alldirec(Point(x, y), true, current_turn)){
 					if(rating[y][x] > max){
 						max = rating[y][x];
 						max_pos = Point(x, y);
@@ -194,46 +194,46 @@ Point search_sand_pair(Point start_pos, Point direc, stonecolor turn){
 	} while(board[search_pos.y][search_pos.x] == get_enemy_color(turn));
 	return search_pos - direc;//ゴールの一歩手前までが裏返す所!
 }
-int reverse(Point start_pos, Point direc, bool just_check, stonecolor turn){
+bool reverse(Point start_pos, Point direc, bool just_check, stonecolor turn){
 	Point reverse_pos = start_pos;
 	Point goal = search_sand_pair(start_pos, direc, turn);
 	if(goal == start_pos){
-		return 0;
+		return false;
 	}
-	int reverse_sum = 0;
 	do{
 		reverse_pos += direc;
 		if(!just_check){
 			board[reverse_pos.y][reverse_pos.x] = turn;
 		}
-		reverse_sum++;
 	} while(!(reverse_pos == goal));
-	return reverse_sum;
+	return true;
 }
-int reverse_alldirec(Point fing, bool just_check, stonecolor turn){
+bool reverse_alldirec(Point fing, bool just_check, stonecolor turn){
 	//入力範囲チェック
 	if(!((1 <= fing.x && fing.x <= 8) && (1 <= fing.y && fing.y <= 8))){
-		return 0;
+		return false;
 	}
+	//入力チェック既においてあるか．もうちょっと良い方法あるかも．
 	if(!(board[fing.y][fing.x] == green)){
-		return 0;
+		return false;
 	}
-
-	int reverse_sum = 0;
+	bool ok = false;
 	for(int y = -1; y <= 1; ++y){
 		for(int x = -1; x <= 1; ++x){
 			if(!(y == 0 && x == 0)){
-				reverse_sum += reverse(fing, Point(x, y), just_check, turn);
+				if(reverse(fing, Point(x, y), just_check, turn)){
+					ok = true;
+				}
 			}
 		}
 	}
-	return reverse_sum;
+	return ok;
 }
 
 bool is_need_pass(stonecolor player){
 	for(int y = 1; y <= 8; ++y){
 		for(int x = 1; x <= 8; ++x){
-			if(reverse_alldirec(Point(x, y), true, player) > 0){
+			if(reverse_alldirec(Point(x, y), true, player)){
 				return false;
 			}
 		}
@@ -274,7 +274,7 @@ int main(){
 				fing_pos = reversi_AI::think();
 				cout << fing_pos.x << " " << fing_pos.y << "に置いたよ" << endl << endl;
 			}
-			if(reverse_alldirec(fing_pos, false, current_turn) > 0){
+			if(reverse_alldirec(fing_pos, false, current_turn)){
 				board[fing_pos.y][fing_pos.x] = current_turn;
 				change_player();
 			} else{
