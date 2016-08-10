@@ -43,30 +43,29 @@ public:
 private:
 
 };
-Point::Point(int xv, int yv){
-	x = xv;
-	y = yv;
+Point::Point(int x, int y){
+	this->x = x;
+	this->y = y;
 }
-//未初期化である事に注意
+
 Point::Point(){}
 Point::~Point(){}
 
 bool reverse_alldirec(Point, bool, stonecolor);
 Point search_sand_pair(Point, Point, stonecolor);
 
+//HACK:ここに置くのはちょっと・・・
 int rating[10][10] = {{},{0,30,-12,0,-1},
 {0,-12,-15,-3,-3},
 {0,0,-3,0,-1},
 {0,-1,-3,-1,-1}};
+
 class reversi_AI{
 public:
 	reversi_AI();
 	~reversi_AI();
 	Point static think(){
-		//int rating[10][10] = {{},{0,30,-12,0,-1},
-		//{0,-12,-15,-3,-3},
-		//{0,0,-3,0,-1},
-		//{0,-1,-3,-1,-1}};
+		//ratingの初期化
 		for(int y = 1; y <= 8; ++y){
 			for(int x = 1; x <= 8; ++x){
 				rating[y][9 - x] = rating[y][x];
@@ -97,7 +96,7 @@ private:
 		Point reverse_pos = start_pos;
 		Point goal = search_sand_pair(start_pos, direc, turn);
 		if(goal == start_pos){
-			//HACK:絶対やめろ!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			//HACK:絶対やめた方が良い!
 			return -9999;
 		}
 		int rate_sum = 0;
@@ -111,12 +110,12 @@ private:
 	int static rate_alldirec(Point fing, stonecolor turn){
 		//入力範囲チェック
 		if(!((1 <= fing.x && fing.x <= 8) && (1 <= fing.y && fing.y <= 8))){
-			//HACK:絶対やめろ!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			//HACK:絶対やめた方が良い!
 			return -9999;
 		}
 		//入力チェック既においてあるか．もうちょっと良い方法あるかも．
 		if(!(board[fing.y][fing.x] == green)){
-			//HACK:絶対やめろ!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			//HACK:絶対やめた方が良い!
 			return -9999;
 		}
 		int rate_sum = 0;
@@ -124,7 +123,6 @@ private:
 		for(int y = -1; y <= 1; ++y){
 			for(int x = -1; x <= 1; ++x){
 				if(!(y == 0 && x == 0)){
-					//rate_sum += rate_reverse(fing, Point(x, y), turn);
 					int tmp = rate_reverse(fing, Point(x, y), turn);
 					if(tmp > -9999){
 						rate_sum += tmp;
@@ -134,7 +132,7 @@ private:
 			}
 		}
 		if(!ok){
-			//HACK:絶対やめろ!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			//HACK:絶対やめた方が良い!
 			return -9999;
 		}
 		return rate_sum;
@@ -230,13 +228,7 @@ void change_player(){
 	}
 }
 
-//TODO:search_sand_pairとreverseまとめれそうじゃない?
 Point search_sand_pair(Point start_pos, Point direc, stonecolor turn){
-	//Point search_pos = start_pos + direc;
-	//if(board[search_pos.y][search_pos.x] == turn || board[search_pos.y][search_pos.x] == green){
-	//	return start_pos;
-	//	//とれなかった事を検索開始位置を返すことで示す
-	//}
 	Point search_pos = start_pos;
 	do{
 		search_pos += direc;
@@ -266,21 +258,21 @@ bool reverse_alldirec(Point fing, bool just_check, stonecolor turn){
 	if(!((1 <= fing.x && fing.x <= 8) && (1 <= fing.y && fing.y <= 8))){
 		return false;
 	}
-	//入力チェック既においてあるか．もうちょっと良い方法あるかも．
+	//入力チェック既においてあるか．
 	if(!(board[fing.y][fing.x] == green)){
 		return false;
 	}
-	bool ok = false;
+	bool isok = false;
 	for(int y = -1; y <= 1; ++y){
 		for(int x = -1; x <= 1; ++x){
-			if(!(y == 0 && x == 0)){
-				if(reverse(fing, Point(x, y), just_check, turn)){
-					ok = true;
-				}
+			//if(!(y == 0 && x == 0)){
+			if(reverse(fing, Point(x, y), just_check, turn)){
+				isok = true;
 			}
+			//}
 		}
 	}
-	return ok;
+	return isok;
 }
 
 bool is_need_pass(stonecolor player){
@@ -303,9 +295,8 @@ bool is_end(){
 int main(){
 	while(true){
 		init();
-		cout << "先手は?" << endl;
+		cout << "先手は? 1:入力 2:AI" << endl;
 		int first_player;
-		//HACK:数値で受けとっちゃってる
 		cin >> first_player;
 		while(true){
 			draw();
@@ -314,7 +305,6 @@ int main(){
 			}
 			if(is_need_pass(current_turn)){
 				cout << "パス" << endl;
-				//UNDONE:連続パスの時
 				change_player();
 			}
 			show_turn();
